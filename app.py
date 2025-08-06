@@ -5,10 +5,16 @@ from dotenv import load_dotenv
 import smtplib
 from email.message import EmailMessage
 from services.email_fetcher import fetch_and_save_attachments
+from pync import Notifier
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Load environment variables
+load_dotenv()
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
 # Global temporary email list
 temp_list_student_email = []
@@ -46,7 +52,11 @@ def upload():
         for email in temp_list_student_email:
             send_email(email)
 
-        return f"Emails sent to {len(temp_list_student_email)} students!"
+        return f"Emails sent to {len(temp_list_student_email)} students!",200
+        #notif = "Emails sent to {len(temp_list_student_email)} students!"
+        ## Notify user
+        #Notifier.notify(notif, title="Sending emails successful")
+
     except Exception as e:
         print("Error:", e)
         return f"Failed: {e}", 500
@@ -57,13 +67,15 @@ def send_email(to_email):
 
     msg = EmailMessage()
     msg['Subject'] = "[TEST EMAIL] ADNOC Internship: Please Submit Your ID and Passport"
-    msg['From'] = "emailll"
+    msg['From'] = EMAIL_USER
     msg['To'] = to_email
 
     msg.set_content(f"""
         Hi,
         
         This is a reminder to submit your Emirates ID and Passport (both PDFs) by replying to this email with attachments.
+        
+        Any replies not in this thread will not be considered.
         
         Best regards,  
         HR Department @ ADNOC
@@ -72,7 +84,7 @@ def send_email(to_email):
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
             smtp.starttls()
-            smtp.login("emailll", "passs")
+            smtp.login(EMAIL_USER, EMAIL_PASSWORD)
             smtp.send_message(msg)
     except Exception as e:
         print(f"Failed to send to {to_email}: {e}")
